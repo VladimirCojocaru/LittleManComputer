@@ -1,0 +1,449 @@
+'''
+Created on 21 May 2020
+
+Little Man Computer Simulator
+
+authors: Andrei Laurentiu Adrian 10LF391
+         Cojocaru Vladimir 10LF391
+'''
+
+import threading
+import tkinter
+import webbrowser
+from tkinter import messagebox
+from tkinter import Menu
+from tkinter import filedialog
+from tkinter import simpledialog
+from tkinter.constants import *
+from tkinter import scrolledtext
+
+
+tk = tkinter.Tk()
+
+current = 0
+acumulator = 0
+last = 0
+
+
+def callback(sv, pos, type):
+    print(sv.get() + ":" + str(pos) + ":" + type)
+    if type == "Assembly":
+        AssemblyParser(sv, pos)
+
+
+# null method for invalid string
+def null(string, pos):
+    print("Invalid Thing")
+
+
+# Assembly Parser Start
+def hlt(string, pos):
+    try:
+        MachineCellsSV[pos].set("000")
+    except:
+        pass
+
+
+def add(string, pos):
+    value = 100
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(100, 200, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def sub(string, pos):
+    value = 200
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(200, 300, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def sta(string, pos):
+    value = 300
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(300, 400, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def lda(string, pos):
+    value = 500
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(500, 600, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def bra(string, pos):
+    value = 600
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(600, 700, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def brz(string, pos):
+    value = 700
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(700, 800, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def brp(string, pos):
+    value = 800
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(800, 900, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+def inp(string, pos):
+    try:
+        MachineCellsSV[pos].set("901")
+    except:
+        pass
+
+
+def out(string, pos):
+    try:
+        MachineCellsSV[pos].set("902")
+    except:
+        pass
+
+
+def otc(string, pos):
+    try:
+        MachineCellsSV[pos].set("903")
+    except:
+        pass
+
+
+def dat(string, pos):
+    value = 0
+    try:
+        value = value + int(string[1])
+    except:
+        pass
+    if value in range(0, 1000, 1):
+        try:
+            MachineCellsSV[pos].set(str(value))
+        except:
+            pass
+
+
+AssemblyConversion = {"HLT": hlt, "ADD": add, "SUB": sub,
+                      "STA": sta, "LDA": lda, "BRA": bra,
+                      "BRZ": brz, "BRP": brp, "INP": inp,
+                      "OUT": out, "DAT": dat, "OTC": otc}
+
+
+def AssemblyParser(sv, pos):
+    fullString = sv.get()
+    splitString = fullString.split()
+    if len(splitString) != 0:
+        AssemblyConversion.get(splitString[0], null)(splitString, pos)
+# Assembly Parser End
+
+
+# Machine executor Begin
+class ExecThread(threading.Thread):
+    current = 0
+    acumulator = 0
+    last = 0
+
+    def __init__(self):
+        threading.Thread.__init__(self, name="Execution Thread")
+        self._target = self.execute
+
+    def ex0xx(self, addr):
+        print("Executing Halt")
+        self.current = 100
+
+    def ex1xx(self, addr):
+        print("Executing Add")
+        global MachineCellsSV
+        remote = int(MachineCellsSV[addr].get())
+        self.acumulator += remote
+
+    def ex2xx(self, addr):
+        print("Executing Sub")
+        global MachineCellsSV
+        remote = int(MachineCellsSV[addr].get())
+        self.acumulator -= remote
+
+    def ex3xx(self, addr):
+        print("Executing Sta")
+        global MachineCellsSV
+        MachineCellsSV[addr].set(self.acumulator)
+
+    def ex5xx(self, addr):
+        print("Executing Lda")
+        global MachineCellsSV
+        remote = int(MachineCellsSV[addr].get())
+        self.acumulator = remote
+
+    def ex6xx(self, addr):
+        print("Executing Bra")
+        self.current = addr
+
+    def ex7xx(self, addr):
+        print("Executing Brz")
+        if self.acumulator == 0:
+            self.current = addr
+
+    def ex8xx(self, addr):
+        print("Executing Brp")
+        if self.acumulator >= 0:
+            self.current = addr
+
+    def ex9xx(self, addr):
+        print("Executing I/O")
+        if addr == 1:
+            input_value = tkinter.simpledialog.askinteger("Input", "Enter your input value: ")
+            self.acumulator = input_value
+        if addr == 2:
+            textBox.insert("end-1c", str(self.acumulator)+"\n")
+        if addr == 3:
+            textBox.insert("end-1c", chr(self.acumulator)+"\n")
+
+    def execute(self):
+        global MachineCellsSV
+        print("Starting Execution")
+        self.current = 0
+        MacineExecParser = {"0": self.ex0xx, "1": self.ex1xx,
+                            "2": self.ex2xx, "3": self.ex3xx,
+                            "5": self.ex5xx, "6": self.ex6xx,
+                            "7": self.ex7xx, "8": self.ex8xx,
+                            "9": self.ex9xx}
+        try:
+            while self.current <= 99:
+                value = MachineCellsSV[self.current].get()
+                self.current += 1
+                MacineExecParser.get(value[0], self.ex0xx)(int(value[1:3]))
+            print("Finished Execution")
+            print(self.acumulator)
+        except Exception as e:
+            print(str(e))
+
+    def halt(self):
+        self.current = 100
+        textBox.delete(1.0, END)
+
+
+ExecThread = ExecThread()
+
+
+# Assembly executor END
+class Cell(tkinter.StringVar):
+    def __init__(self, pos, type):
+        self.pos = pos
+        self.type = type
+        tkinter.StringVar.__init__(self)
+        # TODO: determine what lambda does
+        tkinter.StringVar.trace(self, "w", lambda name, index, mode, self=self: callback(self, self.pos, type))
+
+
+AssemblyCells = [None] * 100
+AssemblyCellsSV = [None] * 100
+for i in range(0, 100, 1):
+    AssemblyCellsSV[i] = Cell(i, "Assembly")
+    ittrvar = AssemblyCellsSV[i]
+    ittrvar.set("HLT")
+AssemblyLbls = [None] * 100
+
+MachineCells = [None] * 100
+MachineCellsSV = [None] * 100
+for i in range(0, 100, 1):
+    MachineCellsSV[i] = Cell(i, "Machine")
+    ittrvar = MachineCellsSV[i]
+    ittrvar.set("000")
+MachineLbls = [None] * 100
+
+tk.title("Little Man Computer")
+frame = tkinter.Frame(tk, bg="steelblue1", relief=FLAT, borderwidth=20)
+frame.pack(fill=BOTH, expand=1)
+
+# Assembly Code GUI Section
+AssemblyLabel = tkinter.Label(frame, bg="steelblue1", text="Assembly")
+AssemblyLabel.config(font=("Arial", 15))
+AssemblyLabel.grid(row=1, column=0)
+AssemblyFrame = tkinter.Frame(frame, relief=RIDGE, borderwidth=20, width=200, height=500)
+AssemblyFrame.grid(row=2, column=0, rowspan=6)
+AssemblyCanvas = tkinter.Canvas(AssemblyFrame, width=100, height=350)
+AssemblyCanvas.pack(side=LEFT, fill=BOTH)
+AssemblyScroll = tkinter.Scrollbar(AssemblyFrame, command=AssemblyCanvas.yview)
+AssemblyCanvas.config(yscrollcommand=AssemblyScroll.set, scrollregion=(-200, 0, 50, 2110))
+AssemblyScroll.pack(side=RIGHT, fill=Y)
+AssemblyCanvasFrame = tkinter.Frame(AssemblyCanvas)
+AssemblyCanvasFrameFiller = tkinter.Label(AssemblyCanvasFrame, text="Hidden", height=3)
+AssemblyCanvasFrameFiller.grid(row=0, column=0)
+for i in range(0, 100, 1):
+    AssemblyLbls[i] = tkinter.Label(AssemblyCanvasFrame, text=str(i))
+    AssemblyLbls[i].grid(row=i + 1, column=0)
+    AssemblyCells[i] = tkinter.Entry(AssemblyCanvasFrame, width=10, textvariable=AssemblyCellsSV[i])
+    AssemblyCells[i].grid(row=i + 1, column=1)
+AssemblyCanvas.create_window(0, 1030, window=AssemblyCanvasFrame)
+
+# Machine Code GUI Section
+MachineLabel = tkinter.Label(frame, bg="steelblue1", text="Machine Code")
+MachineLabel.config(font=("Arial", 15))
+MachineLabel.grid(row=1, column=3)
+MachineFrame = tkinter.Frame(frame, relief=RIDGE, borderwidth=20, width=200, height=500)
+MachineFrame.grid(row=2, column=3, rowspan=6)
+MachineCanvas = tkinter.Canvas(MachineFrame, width=100, height=350)
+MachineCanvas.pack(side=LEFT, fill=BOTH)
+MachineScroll = tkinter.Scrollbar(MachineFrame, command=MachineCanvas.yview)
+MachineCanvas.config(yscrollcommand=MachineScroll.set, scrollregion=(-200, 0, 50, 2110))
+MachineScroll.pack(side=RIGHT, fill=Y)
+MachineCanvasFrame = tkinter.Frame(MachineCanvas)
+MachineCanvasFrameFiller = tkinter.Label(MachineCanvasFrame, text="Hidden", height=3)
+MachineCanvasFrameFiller.grid(row=0, column=0)
+for i in range(0, 100, 1):
+    MachineLbls[i] = tkinter.Label(MachineCanvasFrame, text=str(i))
+    MachineLbls[i].grid(row=i + 1, column=0)
+    MachineCells[i] = tkinter.Entry(MachineCanvasFrame, width=10, textvariable=MachineCellsSV[i])
+    MachineCells[i].grid(row=i + 1, column=1)
+MachineCanvas.create_window(0, 1030, window=MachineCanvasFrame)
+
+
+# Other GUI Stuff
+def file_save():
+    f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+    if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        return
+    for i in range(0, 99, 1):
+        save_text = AssemblyCellsSV[i].get()  # starts from `1.0`, not `0.0`
+        f.write(save_text + "\n")
+    f.close()
+
+
+def file_open():
+    f = filedialog.askopenfile(initialdir="C:\\Users\\Laur\\Desktop\\LMC Files", title="Select a file",
+                               filetypes=((".txt files", ".txt"), ("all files", "*.*")))
+    counter = 0
+    if f is None:
+        return
+    with open(f.name) as fp:
+        for line in fp:
+            AssemblyCellsSV[counter].set(line)
+            counter = counter + 1
+    fp.close()
+
+
+def info():
+    text_info = "\n\tLittle Man Computer(LMC) este un model de calculator dezvoltat de dr. Stuart Madnick in anul 1965. LMC este utilizat, de obicei," \
+                " la invatarea elevilor intrucat acesta evidentiaza principii Von Neumann de baza ale arhitecturii calculatoarelor." \
+                "\n\tLMC este bazat pe conceptul unui mic om inchis intr-o camera. La un capat al camerei se afla 100 de cutii postale," \
+                " numerotate de la 0 la 99, fiecare continand cate o instructiune pe 3 cifre (de la 000 la 999). De asemenea, " \
+                "la celalalt capat al camerei se afla 2 cutii postale (INBOX si OUTBOX) folosite pentru a receptiona si a afisa datele. " \
+                "In centrul camerei se afla o zona de lucru constand intr-un calculator cu 2 functii simple (adunare si scadere) si un counter resetabil. " \
+                "\n\tCounter-ul retine adresa urmatoarei instructiuni pe care omuletul o va executa. " \
+                "Acest counter este incrementat cu 1 dupa fiecare instructiune executata, permitandu-i astfel omuletului " \
+                "sa execute un program in mod secvential.Pentru utilizarea LMC, user-ul incarca date in cutiile postale si " \
+                "apoi semnaleaza omuletului inceperea executiei, incepand cu instructiunea memorata la adresa de memorie 0. " \
+                "Resetarea counterului la 0 reprezinta practic restartarea programului."
+    tkinter.messagebox.showinfo("Informatii", text_info)
+
+
+def help_menu():
+    webbrowser.open("https://peterhigginson.co.uk/lmc/")
+
+
+def help_instructions():
+    instructions = "Exista un set de instructiuni pentru Little Man Computer format din 11 comenzi:\n\n"
+    instructions += "INP cu codul 901 -> citeste datele date de utilizator\n"
+    instructions += "OUT cu codul 902 -> afiseaza pe ecran datele stocate in acumulator\n"
+    instructions += "ADD cu codul 1xx -> pentru efectuarea unei sume\n"
+    instructions += "SUB cu codul 2xx -> pentru efectuarea unei diferente\n"
+    instructions += "STA cu codul 3xx -> pentru stocarea de date intr-o anumita celula\n"
+    instructions += "LDA cu codul 5xx -> pentru incarcarea in acumulator a datelor dintr-o anumita celula\n"
+    instructions += "BRA cu codul 6xx -> pentru a merge la o anumita casuta\n"
+    instructions += "BRZ cu codul 7xx -> pentru a merge la o anumita celula, daca este egal cu 0\n"
+    instructions += "BRP cu codul 8xx -> pentru a merge la o anumita celula, daca este mai mare sau egal cu 0\n"
+    instructions += "HLT -> pentru oprirea executiei\n"
+    instructions += "DAT -> pentru a trata continutul unei celule ca date\n\n"
+    instructions += "xx reprezinta adresa celulei de memorie (intre 00 si 99)\n\n"
+    instructions += "In plus, pentru programul nostru am mai creat o instructiune: \n"
+    instructions += "OTC cu codul 903 -> afiseaza pe ecran datele stocate, transformate in tipul de date char\n"
+    tkinter.messagebox.showinfo("Instructiuni LMC", instructions)
+
+
+menubar = Menu(tk)
+filemenu = Menu(menubar, tearoff=0)
+filemenu.add_command(label="Load File", command=file_open)
+filemenu.add_command(label="Save File", command=file_save)
+filemenu.add_separator()
+filemenu.add_command(label="Exit", command=tk.destroy)
+menubar.add_cascade(label="File", menu=filemenu)
+
+helpmenu = Menu(menubar, tearoff=0)
+helpmenu.add_command(label="Instructiuni LMC", command=help_instructions)
+helpmenu.add_command(label="Simulator online LMC", command=help_menu)
+helpmenu.add_command(label="Despre program", command=info)
+menubar.add_cascade(label="Help", menu=helpmenu)
+
+tk.config(menu=menubar)
+
+InfoLBL1 = tkinter.Label(frame, bg="steelblue1", relief=FLAT, borderwidth=10, text="LITTLE MAN COMPUTER EMULATOR")
+InfoLBL1.config(font=("Courier", 26))
+InfoLBL1.grid(row=0, columnspan=4)
+
+OutputFrame=tkinter.Frame(frame, width=150, height=150, bg="tomato")
+InfoLBL2 = tkinter.Label(OutputFrame, bg="tomato", text="OUTPUT", borderwidth=5)
+OutputFrame.grid(row=2, rowspan=2, column=1, columnspan=2)
+InfoLBL2.grid(row=2, column=1, columnspan=2)
+textBox = scrolledtext.ScrolledText(OutputFrame, width=10, height=10)
+textBox.grid(row=3, column=1, columnspan=2)
+textBox.config(background="light grey", foreground="black", font="times 10 bold", wrap="word")
+
+ControlExec = tkinter.Button(frame, bg="lightgreen", text="Start", command=ExecThread.execute)
+ControlStop = tkinter.Button(frame, bg="red", text="Reset", command=ExecThread.halt)
+ControlExec.grid(row=7, column=1)
+ControlStop.grid(row=7, column=2)
+
+ExecThread.start()
+
+tk.mainloop()
+try:
+    tk.destroy()
+except:
+    pass
+
